@@ -31,3 +31,8 @@ resultado_sk = (predict == target_teste).sum() / len(target_teste) * 100
 print(f"Resultado da implementação manual: {resultado_manual:.2f}")
 print(f"Resultado da implementação sklearn: {resultado_sk:.2f}")
 print(f"Diferença: {abs(resultado_sk - resultado_manual):.2f}")
+
+
+# Pode adicionar seu código aqui para testar :)
+
+# adicione seu código aqui...

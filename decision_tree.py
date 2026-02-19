@@ -3,15 +3,23 @@ import numpy as np
 
 # classe do Node que vai ser o elemento básico da arvore
 class Node():
+    """
+    Classe usada para criar os nós que vão ser a unidade básica a arvore de decisão
+    """
     def __init__(self, nome_coluna=None, threshold=None):
-        self.nome_coluna = nome_coluna
-        self.threshold = threshold
+        self.nome_coluna = nome_coluna # nome da coluna que ficou alocada nesse nó
+        self.threshold = threshold     # contem o Threshold numérico para esse nó gerar os filhos da esquerda e direita
         self.left = None               # outro node para valores <= threshold
         self.right = None              # outro node para valores >  threshold
         self.value = None              # if != None, is the predict
         self.value_proba = {}          # dicionario para armazenar a quantidade de aparições de cada valor único do target da tabela atual do nó
 
 class Decision_tree():
+    """
+    classe que define a arvore de descisão com seus atributos e metodos
+    """
+
+    # inicializador da classe
     def __init__(self, max_deep=None, min_samples_split:int=2, min_samples_leaf:int=1, min_impurity_decrease:float=0.0):
         self.no_raiz = Node()                              # Node principal de onde a arvore começa
         #self.true_deep = 0                                 # profundidade real da arvore
@@ -20,11 +28,13 @@ class Decision_tree():
         self.min_samples_leaf = min_samples_leaf           # quantidade mínima de elementos da folha para ela existir
         self.min_impurity_decrease = min_impurity_decrease # número mínimo de redução de pureza para poder gerar um split
 
-    # HELP FUNCTION
-    def creat_leaf(self, current_node:Node):
+    # HELP FUNCTIONS
+    # para transformar um nó em folha
+    def creat_leaf(self, current_node:Node) -> None:
         current_node.value = max(current_node.value_proba, key=current_node.value_proba.get) # coloca como valor o elemento que mais aparece
 
-    def tratar_tabela_split(self, table:pd.DataFrame, column:str, target:pd.Series, threshold:float, direction:str="left"):
+    # para retirar as linhas necessárias da tabela antes de passa-la para o próximo nó
+    def tratar_tabela_split(self, table:pd.DataFrame, column:str, target:pd.Series, threshold:float, direction:str="left") -> tuple:
         """
             Função para tratar a tabela antes dela ir para o próximo node, são feitas as seguintes ações:
                 - remover todas as linhas que não passam no filtro do threshold
@@ -55,7 +65,7 @@ class Decision_tree():
         return (new_table, new_target)
 
     # função para achar o melhor Threshold dado um um array e seus targets
-    def threshold_gini(self, array_values, array_target):
+    def threshold_gini(self, array_values, array_target) -> float:
         """
             Gera qual o melhor threhold dado um conjunto de vários valores numéricos e os seus repectivos targets
 
@@ -65,10 +75,6 @@ class Decision_tree():
             return -> uma tupla com os seguintes valores:
             threshold:float
             gini do melhor threshold:float
-
-            alusão fisual:
-
-            
         """
 
         array_target = np.asanyarray(array_target)
@@ -109,22 +115,29 @@ class Decision_tree():
         return (threshold, best_gini)
 
     # seleciona a coluna que tem maior ganho de informação dentro da tabela e retorna: (column_name, threshold, gini,)
-    def selecionar_coluna(self, table:pd.DataFrame, target):
+    def selecionar_coluna(self, table:pd.DataFrame, target) -> tuple:
         """
-        
+        Função para selecionar qual a melhor coluna para delimitar retornando seu nome, threshold e gini
+
+        parâmetros:
+            table: a tabela que vai ser usada como base
+            target: o target que contem os valores que você quer prever ou classificar
+
+        return:
+            uma tupla com: (nome da melhor coluna, threshold dessa coluna, gini dessa coluna com o melhor threshold)
         """
         
         threshold = int()        # armazena o melhor threshold da coluna com menor gini
         best_gini = float("inf") # armazena o menor gini dentre as colunas
-        column_name = str()
+        column_name = str()      # armazena o nome da melhor coluna
 
         # percorre todas as colunas
         for coluna in table.columns:
-            threshold_temp, gini_temp = self.threshold_gini(table[coluna], target)
+            threshold_temp, gini_temp = self.threshold_gini(table[coluna], target) # pega o melhor threshold e gini dele de uma coluna
 
             if threshold_temp == None: continue # Para o caso de ter uma coluna somente com valores únicos que vai gerar um split vazio
 
-            # se o gini atual for melhor do que o antigo nos salvamos as informações dessa coluna ()
+            # se o gini atual for melhor do que o antigo nos salvamos as informações dessa coluna como a melhor
             if gini_temp < best_gini:
                 threshold = threshold_temp
                 best_gini = gini_temp
@@ -134,24 +147,32 @@ class Decision_tree():
         return(column_name, threshold, best_gini)
 
     
-
-    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1):
+    # função para criar toda a arvore de decisão
+    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1) -> None:
         """
-        
+        parâmetros:
+            table: a tabela que vai ser usada para construir a arvore
+            target: uma coluna com os valores que você quer ensinar a arvore a predizer ou classificar
+            current_node: o nó atual da arvore (None somente no começo para poder pegar o nó raiz)
+            deep: define a profundidade e NUNCA deve ser mudado, ou seja, não mudar esse parametro ao chamar o método dessa classe em um objeto
+
+        return:
+            não retorna nada mas treina toda a arvore com os dados para que ela possa ser usada para fazer a predição/classificação de valores
         """
 
-        if current_node == None: current_node = self.no_raiz             # caso o nó esteja vazio (só é feito uma vez no começo da função)
+        if current_node == None: current_node = self.no_raiz                  # caso o nó esteja vazio (só é feito uma vez no começo da função)
             
-        valores_unicos, contagem = np.unique(target, return_counts=True) # pega os valores únicos e suas quantidades
+        valores_unicos, contagem = np.unique(target, return_counts=True)      # pega os valores únicos e suas quantidades
         current_node.value_proba = {valor:taxa_aparicao for valor, taxa_aparicao in zip(valores_unicos, contagem)} # gera um dict com os valores únicos como chave e sua taxa de aparição como o valor
 
         column_name, threshold, gini = self.selecionar_coluna(table, target)  # Procura a melhor coluna, obtem seu threshold e gini
+
         # caso todas as colunas forem invalidas transforma o no em folha
         if column_name is None or threshold is None or gini is None:
             self.creat_leaf(current_node)
             return
 
-        father_impurity = gini_calculate(target)   # usado para calcular a redução de impureza
+        father_impurity = gini_calculate(target)    # usado para calcular a redução de impureza
         impurity_reduction = father_impurity - gini # redução de impureza usado nos critérios de parada
 
         # CRITÉRIOS DE PARADA
@@ -188,28 +209,37 @@ class Decision_tree():
 
         # SPLITS
         # Prepara os dados para o Node a esquerda (valor <= Threshold) e chama novamente a função para preenche-lo
-        new_table_left, new_target_left = self.tratar_tabela_split(table, column_name, target, threshold, "left")    # remove as linhas onde os valores > threshold e a coluna selecionada a cima
+        new_table_left, new_target_left = self.tratar_tabela_split(table, column_name, target, threshold, "left")    # remove as linhas onde os valores > threshold referente a coluna selecionada a cima
         # Prepara os dados para o Node a direita (valor > Threshold) e chama novamente a função para preenche-lo
-        new_table_right, new_target_right = self.tratar_tabela_split(table, column_name, target, threshold, "right") # remove as linhas ond os valores > threshold e a coluna selecionada a cima
+        new_table_right, new_target_right = self.tratar_tabela_split(table, column_name, target, threshold, "right") # remove as linhas onde os valores <= threshold referente a coluna selecionada a cima
 
         # caso os filhos gerados tenham poucas amostras (criterio de parada)
         if len(new_target_left) < self.min_samples_leaf or len(new_target_right) < self.min_samples_leaf:
             self.creat_leaf(current_node)
             return
 
-        new_node = Node()           # cria um novo node
+        new_node = Node()            # cria um novo node
         current_node.left = new_node # liga node filho da esquerda ao nó pai
 
+        # chamada recursiva para o filho da esquerda
         self.create_tree(new_table_left, new_target_left, new_node, deep+1)
 
-        new_node = Node()            # cria um novo node
+        new_node = Node()             # cria um novo node
         current_node.right = new_node # liga node filho da direita ao nó pai
 
+        # chamada recursiva para o filho a direita
         self.create_tree(new_table_right, new_target_right, new_node, deep+1)
 
-    def predict(self, row:pd.Series, current_node:Node=None, nome_coluna:str="target"):
+    def predict(self, row:pd.Series, current_node:Node=None):
         """
+        método responsável por fazer o predict depois da arvore ser treinada
+
+        parâmetros:
+            row: uma linha contendo as informações de entrada para fazer o predict (os index da series tem que bater com a tabela usada no treino)
+            current_node: nunca deve ser mechido, é usado para pegar a nó raiz posteriormente
         
+        return:
+            pode ser qualquer valor, depende do tipo de valor que estava armazenado no target da tabela que foi usada para treino da arvore
         """
 
         if current_node is None: current_node = self.no_raiz # para o caso de ser o primeiro nó

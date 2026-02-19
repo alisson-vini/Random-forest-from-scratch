@@ -122,5 +122,6 @@ Se não definirmos nenhum critério de para para a arvore ela vai crescer até q
 - Quantidade de amostras for pequena demais (parametro **min_samples_split** da classe `Decision_tree`)
 - Quantidade de amostras de alguma folha gerada for pequena demais (parametro **min_samples_leaf** da classe `Decision_tree`)
 - Decrescimento da impureza dos nós é muito pequena (parametro **min_impurity_decrease** da classe `Decision_tree`)
+- Caso todas as colunas de uma tabela sejam compostas por somente um valor único (um mesmo valor para todas as linhas de todas as colunas, podem ser valores diferente entre uma coluna e outra) esse é importante pois não tem mais como aprender um padrão com esse tipo de dado então é melhor transformar em uma folha
 
 Quando qualquer um desses critérios de parada é satisfeito o nó da arvore vira uma folha, ou seja, ele passa a conter o valor de retorno da predição ("o sair de casa" ou "não sair de casa" do nosso problema). Caso não seja um nó puro (somente amostras de uma classe) o valor da folha vai ser a classe que mais se repete dentro das amostras daquele nó.
