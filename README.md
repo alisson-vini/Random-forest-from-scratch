@@ -20,17 +20,17 @@ Esse projeto foi concebido com a ideia de aperfeiçoar meus conhecimentos no fun
 1. Separe o DataSet em treino e teste, pode usar o train_test_split do sklearn
 1. Instancie a classe `Decision_tree`
 1. Use o método `create_tree` no objeto criado passando como parâmetro o conjuntos de dados (tipo **pd.DataFrame**) e target (tipo **pd.Series**) de teste para treinar o modelo, você pode conferir os demais parâmetros olhando o código desse método na classe assim como é explicado posteriormente nesse readme
-1. Use o método `predict` no objeto já treinado passando uma **pd.Series** com o index sendo os nomes das colunas desse dataset como parâmetro referente a uma linha do dataset e você vai ter a predição para esse linha de dados. Caso você queria aplicar em um df inteiro você pode fazer: `pd.Series([ tree.predict(entrada_teste.iloc[i]) for i in range(len(entrada_teste)) ])`
+1. Use o método `predict` no objeto já treinado passando como parâmetro uma **pd.Series** com o index sendo os nomes das colunas desse dataset referente a uma linha do dataset, e você vai ter a predição para esse linha de dados. Caso você queria aplicar em um df inteiro você pode fazer: `pd.Series([ tree.predict(entrada_teste.iloc[i]) for i in range(len(entrada_teste)) ])`
 1. Rode o código
 
 ## Como árvores de decisão funcionam:
-Para começar a entender como árvores de decisão funcionam vamos imaginar o seguinte exemplo: queremos saber qual a chance de uma pessoa sair de casa em um dia baseado na quantidade de chuva (eixo x) e na quantidade de luz solar (eixo y), de forma que temos o gráfico a baixo onde os pontos verdes são pessoas que sairam de casa e os vermelhos são pessoas que não sairam de casa
+Para começar a entender como árvores de decisão funcionam, vamos imaginar o seguinte exemplo: queremos saber qual a chance de uma pessoa sair de casa em determinado dia baseado na quantidade de chuva (eixo x) e na quantidade de luz solar (eixo y).
 
 vamos considerar o seguinte dataset:
 
 ![dataset](graficos/dataset.png)
 
-que gera o seguinte gráfico:
+que gera o seguinte gráfico onde os pontos verdes são pessoas que sairam de casa e os vermelhos são pessoas que não sairam de casa:
 
 ![Gráfico](graficos/Grafico_chuvas_01.png)
 
