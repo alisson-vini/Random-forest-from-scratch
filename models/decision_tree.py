@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+import numpy as np  
 
 # classe do Node que vai ser o elemento básico da arvore
 class Node():
