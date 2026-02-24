@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-import decision_tree
+import models.decision_tree as decision_tree
 
 # DATA SET IRIS
 data = load_iris(as_frame=True)
