@@ -20,7 +20,7 @@ Esse projeto foi concebido com a ideia de aperfeiçoar meus conhecimentos no fun
 1. Separe o DataSet em treino e teste, pode usar o train_test_split do sklearn
 1. Instancie a classe `Decision_tree`
 1. Use o método `create_tree` no objeto criado passando como parâmetro o conjuntos de dados (tipo **pd.DataFrame**) e target (tipo **pd.Series**) de teste para treinar o modelo, você pode conferir os demais parâmetros olhando o código desse método na classe assim como é explicado posteriormente nesse readme
-1. Use o método `predict` no objeto já treinado passando como parâmetro uma **pd.Series** com o index sendo os nomes das colunas desse dataset referente a uma linha do dataset, e você vai ter a predição para esse linha de dados. Caso você queria aplicar em um df inteiro você pode fazer: `pd.Series([ tree.predict(entrada_teste.iloc[i]) for i in range(len(entrada_teste)) ])`
+1. Use o método `predict` no objeto já treinado passando como parâmetro um **pd.DataFrame** com as mesma colunas dos dados usados para o treinamento, isso vai retornar uma `pd.Series` com os repectivos targets de cada coluna
 1. Rode o código
 
 ## Como árvores de decisão funcionam:
@@ -80,7 +80,7 @@ seguindo esses passos nós teriamos os seguintes Thresholds para o eixo x:
 
 ![todos_thresholds](graficos/todos_thresholds_x.png)
 
-Agora que sabemos quais são todos os Thresholds possíveis para esse eixo precisamos saber realmente qual desses é o melhor para dividir os dados, para isso nós vamos usar a formula `Gini` ela serve para calcular quão mal dividido está um está um conjunto de dados. quanto maior o valor do gini mais mal dividido estão os dados, recomento pesquisar como funciona a formula de Gini para ter maior compressão dessa parte.
+Agora que sabemos quais são todos os Thresholds possíveis para esse eixo precisamos saber realmente qual desses é o melhor para dividir os dados, para isso nós vamos usar a formula `Gini` ela serve para calcular quão mal dividido está um está um conjunto de dados. quanto maior o valor do gini mais mal dividido estão os dados, recomento pesquisar como funciona a formula de Gini para ter maior compressão dessa parte, confira esse vídeo para aprender mais sobre Gini impurity: [link](https://www.youtube.com/watch?v=u4IxOk2ijSs).
 
     Gini = 1 - somatório( p1**2 )
 

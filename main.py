@@ -15,7 +15,7 @@ entrada_treino, entrada_teste, target_treino, target_teste = train_test_split(X,
 # RESULTADO DA MINHA IMPLEMENTAÇÃO MANUAL
 tree = decision_tree.Decision_tree()
 tree.create_tree(entrada_treino, target_treino)
-predict = pd.Series([ tree.predict(entrada_teste.iloc[i]) for i in range(len(entrada_teste)) ])
+predict = tree.predict(entrada_teste)
 
 resultado_manual = (predict.values == target_teste.values).sum() / len(target_teste) * 100
 

@@ -230,31 +230,59 @@ class Decision_tree():
         # chamada recursiva para o filho a direita
         self.create_tree(new_table_right, new_target_right, new_node, deep+1)
 
-    def predict(self, row:pd.Series, current_node:Node=None):
+    def predict(self, table:pd.DataFrame) -> pd.Series:
         """
         método responsável por fazer o predict depois da arvore ser treinada
-
-        parâmetros:
-            row: uma linha contendo as informações de entrada para fazer o predict (os index da series tem que bater com a tabela usada no treino)
-            current_node: nunca deve ser mechido, é usado para pegar a nó raiz posteriormente
         
+        parâmetros:
+            table -> a tabela com os dados que vão ter seus predicts
+
         return:
-            pode ser qualquer valor, depende do tipo de valor que estava armazenado no target da tabela que foi usada para treino da arvore
+            uma Serie com os predicts para cada linha da table
+        
         """
 
-        if current_node is None: current_node = self.no_raiz # para o caso de ser o primeiro nó
+        # cria uma Serie vazia que vai conter os predicts
+        predicts = pd.Series(index=table.index, dtype=object)
 
-        # Critério de parada
+        # preenche a Serie vazia com os predicts
+        self.return_predict(table, predicts, self.no_raiz)
+        
+        return predicts
+    
+    def return_predict(self, table:pd.DataFrame, predicts:pd.Series, current_node:Node) -> None:
+        """
+        faz a tabela percorrer a arvore, cada nó filtra a tabela e passa a tabela filtrada para os nós a esquerda e direita, quando chega em uma
+        folha preenche a serie nos respectivos indices com o valor dessa folha
+
+        parâmetros:
+            table -> a tebela inteira com os dados para fazer a predição
+            predicts -> a pd.Series que vai ser preenchida pelos predicts
+            current_node -> é o respectivo nó onde a função está
+
+        return:
+            None já que o array predict que vai ser modificado durante essa função
+        """
+        
+        # Se a tabela estiver vazia não faz nada
+        if len(table) == 0:
+            return
+
         if current_node.value != None:
-            return current_node.value
+            predicts.loc[table.index] = current_node.value
+            return
+
+        mask = table[current_node.nome_coluna] <= current_node.threshold
+
+        table_left = table[mask]
+        table_right = table[~mask]
+
+        # chamada recursiva para nó a esquerda
+        self.return_predict(table_left, predicts, current_node.left)
+
+        # chamada recursiva para nó a direita
+        self.return_predict(table_right, predicts, current_node.right)
         
-        # percorre para a esquerda (valor <= Threshold)
-        if row[current_node.nome_coluna] <= current_node.threshold:
-            return self.predict(row, current_node.left)
-        
-        # percorre para a direita (valor > Threshold)
-        else:
-            return self.predict(row, current_node.right)
         
 
 # função para calcular a Gini de um array
