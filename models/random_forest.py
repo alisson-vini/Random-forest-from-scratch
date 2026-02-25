@@ -95,13 +95,20 @@ class Radom_forest:
             if self.bootstrap: temp_table = self.make_bootstrap(table, qt_amostras) # aplica o bootstrap para pegar N linhas do dataset original
             else: temp_table = table
 
-            features = self.random_feature(table.columns.to_series()).to_list()       # pega quais vão ser as N features que vão ser usadas
+            features = self.random_feature(table.columns.to_series()).to_list()     # pega quais vão ser as N features que vão ser usadas
             temp_table = temp_table.loc[:, features]                                # retira das colunas as features que não foram selecionadas
 
             temp_target = target.loc[temp_table.index]
 
             # instanciando a classe
-            tree = Decision_tree(self.max_deep, self.min_samples_split, self.min_samples_leaf, self.min_impurity_decrease)
+            tree = Decision_tree(
+                self.max_deep,
+                self.min_samples_split,
+                self.min_samples_leaf,
+                self.min_impurity_decrease,
+                self.rng.integers(1,100_000_000),
+                self.max_features
+            )
             # treina a árvore
             tree.create_tree(temp_table, temp_target)
 

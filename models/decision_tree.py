@@ -20,13 +20,26 @@ class Decision_tree():
     """
 
     # inicializador da classe
-    def __init__(self, max_deep=None, min_samples_split:int=2, min_samples_leaf:int=1, min_impurity_decrease:float=0.0):
+    def __init__(
+            self,
+            max_deep=None,
+            min_samples_split:int=2,
+            min_samples_leaf:int=1,
+            min_impurity_decrease:float=0.0,
+            random_state:int=23,
+            max_feature:int=None
+    ):
         self.no_raiz = Node()                              # Node principal de onde a arvore começa
-        #self.true_deep = 0                                 # profundidade real da arvore
+        #self.true_deep = 0                                # profundidade real da arvore
         self.max_deep = max_deep                           # profundidade máxima da arvore
         self.min_samples_split = min_samples_split         # número mínimo de amostras para fazer um split
         self.min_samples_leaf = min_samples_leaf           # quantidade mínima de elementos da folha para ela existir
         self.min_impurity_decrease = min_impurity_decrease # número mínimo de redução de pureza para poder gerar um split
+
+        # Atributos para uso em random forest
+        self.random_state = random_state                         # armazena a semente de aleatoriedade
+        self.rng = np.random.default_rng(seed=self.random_state) # define um gerador de numeros aleatórios com base na semente escolhida
+        self.max_feature = max_feature                           # quantidade de features que vão ser usadas na hora de escolher a melhor coluna durante o treinamento do modelo
 
     # HELP FUNCTIONS
     # para transformar um nó em folha
@@ -115,13 +128,14 @@ class Decision_tree():
         return (threshold, best_gini)
 
     # seleciona a coluna que tem maior ganho de informação dentro da tabela e retorna: (column_name, threshold, gini,)
-    def selecionar_coluna(self, table:pd.DataFrame, target) -> tuple:
+    def selecionar_coluna(self, table:pd.DataFrame, target, max_features:int=None) -> tuple:
         """
         Função para selecionar qual a melhor coluna para delimitar retornando seu nome, threshold e gini
 
         parâmetros:
             table: a tabela que vai ser usada como base
             target: o target que contem os valores que você quer prever ou classificar
+            max_features: serve para limitar o número de colunas ao qual o modelo vai ter acesso para selecionar qual a melhor
 
         return:
             uma tupla com: (nome da melhor coluna, threshold dessa coluna, gini dessa coluna com o melhor threshold)
@@ -131,8 +145,12 @@ class Decision_tree():
         best_gini = float("inf") # armazena o menor gini dentre as colunas
         column_name = str()      # armazena o nome da melhor coluna
 
+        # parte para selecionar quais colunas vão ser usadas na seleção da melhor coluna e Threshold
+        if max_features == None: lista_colunas = table.columns
+        else: lista_colunas = table.columns.to_series().sample(n=max_features, replace=False, random_state=self.rng.integers(1, 100_000_000))
+
         # percorre todas as colunas
-        for coluna in table.columns:
+        for coluna in lista_colunas:
             threshold_temp, gini_temp = self.threshold_gini(table[coluna], target) # pega o melhor threshold e gini dele de uma coluna
 
             if threshold_temp == None: continue # Para o caso de ter uma coluna somente com valores únicos que vai gerar um split vazio
@@ -148,13 +166,14 @@ class Decision_tree():
 
     
     # função para criar toda a arvore de decisão
-    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1) -> None:
+    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1, max_features:int=None) -> None:
         """
         parâmetros:
             table: a tabela que vai ser usada para construir a arvore
             target: uma coluna com os valores que você quer ensinar a arvore a predizer ou classificar
             current_node: o nó atual da arvore (None somente no começo para poder pegar o nó raiz)
             deep: define a profundidade e NUNCA deve ser mudado, ou seja, não mudar esse parametro ao chamar o método dessa classe em um objeto
+            max_features: Serve para treinar arvores para modelos de random forest
 
         return:
             não retorna nada mas treina toda a arvore com os dados para que ela possa ser usada para fazer a predição/classificação de valores
@@ -165,7 +184,7 @@ class Decision_tree():
         valores_unicos, contagem = np.unique(target, return_counts=True)      # pega os valores únicos e suas quantidades
         current_node.value_proba = {valor:taxa_aparicao for valor, taxa_aparicao in zip(valores_unicos, contagem)} # gera um dict com os valores únicos como chave e sua taxa de aparição como o valor
 
-        column_name, threshold, gini = self.selecionar_coluna(table, target)  # Procura a melhor coluna, obtem seu threshold e gini
+        column_name, threshold, gini = self.selecionar_coluna(table, target, max_features)  # Procura a melhor coluna, obtem seu threshold e gini
 
         # caso todas as colunas forem invalidas transforma o no em folha
         if column_name is None or threshold is None or gini is None:
@@ -222,13 +241,13 @@ class Decision_tree():
         current_node.left = new_node # liga node filho da esquerda ao nó pai
 
         # chamada recursiva para o filho da esquerda
-        self.create_tree(new_table_left, new_target_left, new_node, deep+1)
+        self.create_tree(new_table_left, new_target_left, new_node, deep+1, max_features)
 
         new_node = Node()             # cria um novo node
         current_node.right = new_node # liga node filho da direita ao nó pai
 
         # chamada recursiva para o filho a direita
-        self.create_tree(new_table_right, new_target_right, new_node, deep+1)
+        self.create_tree(new_table_right, new_target_right, new_node, deep+1, max_features)
 
     def predict(self, table:pd.DataFrame) -> pd.Series:
         """

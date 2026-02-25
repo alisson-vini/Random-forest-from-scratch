@@ -1,38 +1,28 @@
 import pandas as pd
-from sklearn.datasets import load_iris
+from models import random_forest
+from sklearn.datasets import load_iris, load_digits
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-import models.decision_tree as decision_tree
+from sklearn.ensemble import RandomForestClassifier
 
 # DATA SET IRIS
-data = load_iris(as_frame=True)
-X = data.data
-y = data.target
+tabela = load_digits(as_frame=True)
+X = tabela.data
+y = tabela.target
 
-# SEPARAÇÃO DOS DADOS EM TREINO E TESTE
 entrada_treino, entrada_teste, target_treino, target_teste = train_test_split(X, y, test_size=0.2, random_state=23)
 
-# RESULTADO DA MINHA IMPLEMENTAÇÃO MANUAL
-tree = decision_tree.Decision_tree()
-tree.create_tree(entrada_treino, target_treino)
-predict = tree.predict(entrada_teste)
+forest = random_forest.Radom_forest(n_estimators=100)
+forest.train(entrada_treino, target_treino)
 
-resultado_manual = (predict.values == target_teste.values).sum() / len(target_teste) * 100
+predict = forest.predict(entrada_teste)
 
-# RESULTADO DA IMPLEMENTAÇÃO DO SCIKIT-LEARN 
-tree = DecisionTreeClassifier()
-tree.fit(entrada_treino, target_treino)
-predict = tree.predict(entrada_teste)
+quantidade_acertos = (predict.values == target_teste.values).sum()
 
-resultado_sk = (predict == target_teste).sum() / len(target_teste) * 100
+print(f"Quantidade de acertos manual: {quantidade_acertos} - {quantidade_acertos / len(target_teste) * 100}%")
 
+random_sk = RandomForestClassifier(n_estimators=50, random_state=23)
+random_sk.fit(entrada_treino, target_treino)
+predict = random_sk.predict(entrada_teste)
 
-# COMPARAÇÃO ENTRE OS RESULTADOS
-print(f"Resultado da implementação manual: {resultado_manual:.2f}")
-print(f"Resultado da implementação sklearn: {resultado_sk:.2f}")
-print(f"Diferença: {abs(resultado_sk - resultado_manual):.2f}")
-
-
-# Pode adicionar seu código aqui para testar :)
-
-# adicione seu código aqui...
+quantidade_acertos = (predict == target_teste).sum()
+print(f"Quantidade de acertos sklern: {quantidade_acertos} - {quantidade_acertos / len(target_teste) * 100}%")
