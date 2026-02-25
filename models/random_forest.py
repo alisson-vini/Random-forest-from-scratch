@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+from .decision_tree import Decision_tree
 
 class Radom_forest:
     def __init__(
@@ -7,7 +9,7 @@ class Radom_forest:
         n_estimators:int=100,
         bootstrap:bool=True,
         max_samples:float=None,
-        max_features:int="sqrt",
+        max_features:int | str = "sqrt",
         random_state:int=23,
 
         max_deep:int=None,
@@ -29,19 +31,94 @@ class Radom_forest:
         self.min_impurity_decrease = min_impurity_decrease # Decrescimento de impureza mínimo para fazer um split
         
         # Atributos utilitários
-        self.trees = np.array()                            # Uma lista que armazena todas as árvores
+        self.trees:list[Decision_tree] = list()                  # Uma lista que armazena todas as árvores
+        self.rng = np.random.default_rng(seed=self.random_state) # Cria um gerador de números aleatório com uma semente reprodutível
 
-        # função criar as tabelas com bootstrap
-        def bootstrap(self, table:pd.DataFrame) -> pd.DataFrame:
-            """
+
+    # Função auxiliar
+    def get_more_votes(self, table:np.ndarray) -> pd.Series:
+        """
+        
+        """
+
+        array_target = []
+
+        # percorre cada linha da tabela transposta (cada coluna)
+        for linha in table.T:
+            valores, contagens = np.unique(linha, return_counts=True)
+            array_target.append( valores[np.argmax(contagens)] )
+
+        return pd.Series(array_target)
+
+    # função criar as tabelas com bootstrap
+    def make_bootstrap(self, table:pd.DataFrame, qt_amostras:int) -> pd.DataFrame:
+        """
+        
+        """
+        
+        # gera o DataFrame com bootstrap
+        bootstrap_table = table.sample(n=qt_amostras, replace=True, random_state=self.rng.integers(1, 100_000_000))
+
+        return bootstrap_table
+
+    def random_feature(self, array_coluns:pd.Series) -> pd.Series:
+        """
+        
+        """
+
+        if self.max_features == "sqrt":
+            qt_features = int(len(array_coluns) ** (1/2))
+        elif isinstance(self.max_features, int):
+            qt_features = self.max_features
+        else:
+            raise ValueError("Valor invalido para QT. features")
+
+        # um array com as n features selecionadas aleatóriamente de todas as efatures
+        featrues = array_coluns.sample(n=qt_features, replace=False, random_state=self.rng.integers(1, 100_000_000))
+
+        return featrues
+
+    def train(self, table:pd.DataFrame, target:pd.Series) -> None:
+        """
+        
+        """
+
+        # reseta a floresta de árvores, para o caso da função ser chamda multiplas vezes isso é muito importante
+        self.trees = []
+
+        if self.max_samples == None: qt_amostras = len(table)
+        else: qt_amostras = int(self.max_samples * len(table))
+
+        # cria e treina a N arvores
+        for _ in tqdm(range(self.n_estimators)):
             
-            """
+            if self.bootstrap: temp_table = self.make_bootstrap(table, qt_amostras) # aplica o bootstrap para pegar N linhas do dataset original
+            else: temp_table = table
 
-            qt_amostras = max_samples * len(table)
-            # gera um array np que contem várias tabelas, cada uma delas é para ser usada para construção das max_samples arvores
-            array_tables = np.array( [table.sample(n=qt_amostras)] for _ in range(max_samples) )
+            features = self.random_feature(table.columns.to_series()).to_list()       # pega quais vão ser as N features que vão ser usadas
+            temp_table = temp_table.loc[:, features]                                # retira das colunas as features que não foram selecionadas
 
-            return array_tables
+            temp_target = target.loc[temp_table.index]
 
-        def treinar_arvores(self):
-            pass
+            # instanciando a classe
+            tree = Decision_tree(self.max_deep, self.min_samples_split, self.min_samples_leaf, self.min_impurity_decrease)
+            # treina a árvore
+            tree.create_tree(temp_table, temp_target)
+
+            # adiciona a arvore na floresta
+            self.trees.append(tree)
+    
+    def predict(self, table:pd.DataFrame) -> pd.Series:
+        """
+        
+        """
+
+        # matriz onde cada linha são os resultados de uma arvore dado esse conjunto de entradas
+        matriz_resultado = []
+
+        for tree in self.trees:
+            targets_tree = tree.predict(table)
+            matriz_resultado.append( np.array(targets_tree) )
+
+        matriz_resultado = np.array(matriz_resultado)
+        return self.get_more_votes(matriz_resultado)
