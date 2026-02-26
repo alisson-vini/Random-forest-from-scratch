@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 from .decision_tree import Decision_tree
 
 class Radom_forest:
@@ -90,7 +89,7 @@ class Radom_forest:
         else: qt_amostras = int(self.max_samples * len(table))
 
         # cria e treina a N arvores
-        for _ in tqdm(range(self.n_estimators)):
+        for _ in range(self.n_estimators):
             
             if self.bootstrap: temp_table = self.make_bootstrap(table, qt_amostras) # aplica o bootstrap para pegar N linhas do dataset original
             else: temp_table = table
