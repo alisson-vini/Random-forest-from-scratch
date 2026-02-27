@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
 from .decision_tree import Decision_tree
+from tqdm import tqdm
 
 class Radom_forest:
+
+    # função para inicializar a classe e seus atributos
     def __init__(
         self,
         n_estimators:int=100,
@@ -32,27 +35,40 @@ class Radom_forest:
         # Atributos utilitários
         self.trees:list[Decision_tree] = list()                  # Uma lista que armazena todas as árvores
         self.rng = np.random.default_rng(seed=self.random_state) # Cria um gerador de números aleatório com uma semente reprodutível
+        
 
-
-    # Função auxiliar
+    # Função auxiliar para pegar o target que mais se repete dentre as respostas da Decision Tree
     def get_more_votes(self, table:np.ndarray) -> pd.Series:
         """
+        Função serve para pegar o elemento que mais se repete entre os predicts de cada linha do dataset, resultante das várais árvores
+
+        Parâmetros:
+            table -> um matriz formada por array numpy (2D) onde cada linha é o conjunto de saídas (predict) de cada uma das árvores
         
+        Return:
+            Uma pd.Series com predict mais votado final respectivo para cada amostra
         """
 
-        array_target = []
+        array_target = [] # array que vai conter o conjunto de respostas final
 
-        # percorre cada linha da tabela transposta (cada coluna)
+        # percorre cada linha da tabela transposta (cada coluna, todos os predicts para uma amostra de dados)
         for linha in table.T:
-            valores, contagens = np.unique(linha, return_counts=True)
-            array_target.append( valores[np.argmax(contagens)] )
+            valores, contagens = np.unique(linha, return_counts=True) # pega todos os resultados e a contagem de cada um deles
+            array_target.append( valores[np.argmax(contagens)] )      # adiciona o valor que mais se repete a tabela com os resultados finais
 
         return pd.Series(array_target)
 
     # função criar as tabelas com bootstrap
     def make_bootstrap(self, table:pd.DataFrame, qt_amostras:int) -> pd.DataFrame:
         """
-        
+        Função para fazer o bootstrap, pegar N colunas de forma aleatória com reposição
+
+        Parâmetros:
+            table -> tabela que vai ser usada como base para o bootstrap
+            qt_amostras -> quantidade de linhas que o boostrap vai pegar
+
+        return:
+            pd.DataFrame
         """
         
         # gera o DataFrame com bootstrap
@@ -60,44 +76,52 @@ class Radom_forest:
 
         return bootstrap_table
 
-    def random_feature(self, array_coluns:pd.Series) -> pd.Series:
+    # função para retornar a quantidade de linhas que a tabela vai retornar e a quantidade de colunas
+    def table_feature(self, table:pd.DataFrame) -> pd.Series:
         """
-        
+        Função que serve para retornar a quantidade de linhas que a tabela vai ter e a quantidade de features aleatórias que o modelo vai usar
+        para escolher a melhor coluna
+
+        Parâmetros:
+            table -> tabela original usada para o treino da árvore
         """
 
+        # quantidade de linhas que a tabela vai ter (usado no bootstrap)
+        if self.max_samples == None: qt_amostras = len(table)
+        else: qt_amostras = int(self.max_samples * len(table))
+
+        # quantidade de colunas aleatorias do todo que vão ser selecionadas em cada nó da arvore durante o treino para escolher a melhor
         if self.max_features == "sqrt":
-            qt_features = int(len(array_coluns) ** (1/2))
+            qt_features = int(len(table.columns) ** (1/2))
         elif isinstance(self.max_features, int):
             qt_features = self.max_features
         else:
             raise ValueError("Valor invalido para QT. features")
+        
+        return qt_amostras, qt_features
 
-        # um array com as n features selecionadas aleatóriamente de todas as efatures
-        featrues = array_coluns.sample(n=qt_features, replace=False, random_state=self.rng.integers(1, 100_000_000))
-
-        return featrues
-
+    # função para treinar a árvore
     def train(self, table:pd.DataFrame, target:pd.Series) -> None:
         """
-        
+        Função que serve para treinar a Random forest
+
+        Parâmetros:
+            table -> A tabela original
         """
 
         # reseta a floresta de árvores, para o caso da função ser chamda multiplas vezes isso é muito importante
         self.trees = []
 
-        if self.max_samples == None: qt_amostras = len(table)
-        else: qt_amostras = int(self.max_samples * len(table))
+        # pega a quantidade de linhas do boostrap e a quantidade de colunas que precisa selecionar aleatoriamente em cada split para olhar qual a melhor
+        qt_amostras, qt_features = self.table_feature(table)
 
         # cria e treina a N arvores
-        for _ in range(self.n_estimators):
+        for _ in tqdm(range(self.n_estimators)):
             
             if self.bootstrap: temp_table = self.make_bootstrap(table, qt_amostras) # aplica o bootstrap para pegar N linhas do dataset original
-            else: temp_table = table
+            else: temp_table = table                                                # para o caso de boostrap == False pega a quantidade total de linhas da tabela
 
-            features = self.random_feature(table.columns.to_series()).to_list()     # pega quais vão ser as N features que vão ser usadas
-            temp_table = temp_table.loc[:, features]                                # retira das colunas as features que não foram selecionadas
-
-            temp_target = target.loc[temp_table.index]
+            temp_target = target.loc[temp_table.index] # pega os targets das linhas selecionadas da tabela usando o bootstrap
 
             # instanciando a classe
             tree = Decision_tree(
@@ -106,14 +130,16 @@ class Radom_forest:
                 self.min_samples_leaf,
                 self.min_impurity_decrease,
                 self.rng.integers(1,100_000_000),
-                self.max_features
+                qt_features
             )
+
             # treina a árvore
             tree.create_tree(temp_table, temp_target)
 
             # adiciona a arvore na floresta
             self.trees.append(tree)
     
+    # função para fazer o predict usando todas as árvores
     def predict(self, table:pd.DataFrame) -> pd.Series:
         """
         

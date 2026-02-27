@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-# DATA SET IRIS
+# DATASET
 tabela = load_digits(as_frame=True)
 X = tabela.data
 y = tabela.target

@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np  
+import numpy as np
 
 # classe do Node que vai ser o elemento básico da arvore
 class Node():
@@ -166,14 +166,13 @@ class Decision_tree():
 
     
     # função para criar toda a arvore de decisão
-    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1, max_features:int=None) -> None:
+    def create_tree(self, table:pd.DataFrame, target:pd.Series, current_node:Node=None, deep:int=1) -> None:
         """
         parâmetros:
             table: a tabela que vai ser usada para construir a arvore
             target: uma coluna com os valores que você quer ensinar a arvore a predizer ou classificar
             current_node: o nó atual da arvore (None somente no começo para poder pegar o nó raiz)
             deep: define a profundidade e NUNCA deve ser mudado, ou seja, não mudar esse parametro ao chamar o método dessa classe em um objeto
-            max_features: Serve para treinar arvores para modelos de random forest
 
         return:
             não retorna nada mas treina toda a arvore com os dados para que ela possa ser usada para fazer a predição/classificação de valores
@@ -184,7 +183,7 @@ class Decision_tree():
         valores_unicos, contagem = np.unique(target, return_counts=True)      # pega os valores únicos e suas quantidades
         current_node.value_proba = {valor:taxa_aparicao for valor, taxa_aparicao in zip(valores_unicos, contagem)} # gera um dict com os valores únicos como chave e sua taxa de aparição como o valor
 
-        column_name, threshold, gini = self.selecionar_coluna(table, target, max_features)  # Procura a melhor coluna, obtem seu threshold e gini
+        column_name, threshold, gini = self.selecionar_coluna(table, target, self.max_feature)  # Procura a melhor coluna, obtem seu threshold e gini
 
         # caso todas as colunas forem invalidas transforma o no em folha
         if column_name is None or threshold is None or gini is None:
@@ -241,13 +240,13 @@ class Decision_tree():
         current_node.left = new_node # liga node filho da esquerda ao nó pai
 
         # chamada recursiva para o filho da esquerda
-        self.create_tree(new_table_left, new_target_left, new_node, deep+1, max_features)
+        self.create_tree(new_table_left, new_target_left, new_node, deep+1)
 
         new_node = Node()             # cria um novo node
         current_node.right = new_node # liga node filho da direita ao nó pai
 
         # chamada recursiva para o filho a direita
-        self.create_tree(new_table_right, new_target_right, new_node, deep+1, max_features)
+        self.create_tree(new_table_right, new_target_right, new_node, deep+1)
 
     def predict(self, table:pd.DataFrame) -> pd.Series:
         """
